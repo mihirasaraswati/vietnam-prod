@@ -25,7 +25,6 @@ vignettes/*.pdf
 .Rproj.user
 Data_Per55_Design.Rds
 Data_Viet_Design.Rds
-Raw_Data
 Data_Hou55_Design.Rds
 Data_Hou_Viet_Design.Rds
 Data_Per55_GQ_Design.Rds
