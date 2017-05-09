@@ -1,0 +1,2804 @@
+---
+title: \advance\leftskip-3cm\includegraphics{Slide_Cover.pdf}
+author: ""
+date: ""
+output: 
+  beamer_presentation:
+    latex_engine: xelatex
+    fig_crop: no
+    fonttheme: professionalfonts
+    template: default-beamer-twocol.tex
+    toc: yes
+fontsize: 8pt
+mainfont: Calibri
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, dev = 'pdf')
+# Load libraries and data
+library(survey)
+library(RColorBrewer)
+
+#Data - Vietnam Era  Veterans Survey Design Object
+viet_design <- readRDS("Data_Viet_Design.Rds")
+
+#Data - Age Over 55 General Population Survey Design Object
+per55_design <- readRDS("Data_Per55_Design.Rds")
+
+#Data - Housing Vietnam Vets
+hou_viet_design <- readRDS("Data_Hou_Viet_Design.Rds")
+
+#Data - Housing Age Over 55 General Population
+hou55_design <- readRDS("Data_Hou55_Design.Rds")
+
+#Data - Vietnam Era Veterans GQ Survey  Desgn Object
+viet_gq_design <- readRDS("Data_Per_Viet_GQ_Design.Rds")
+
+#Data - General Populaiton GQ Survey  Desgn Object
+per55_gq_design <- readRDS("Data_Per55_GQ_Design.Rds")
+
+#Data - Utilization data for Vietnam Vets
+uvr15 <- read.csv("UVR_2015_161212_VietVet.csv", sep=",", stringsAsFactors=FALSE)
+
+#Graph stuff
+#create var to reset graphical parameters
+opar <-par(no.readonly=TRUE)
+
+#Paired color vector to comparisons 
+mycols <- brewer.pal(n=12, name = "Paired")
+
+```
+
+```{r age_setup, include=FALSE}
+#calculate vietnam vet total (counts)
+viet.total <- svytotal(~Period, viet_design)
+#calculate median age for vietnam vets
+agep.v.qt <- svyquantile(~AGEP, viet_design, quantiles = c(0.5))
+#calculate median age for General Population
+agep.gp.qt <- svyquantile(~AGEP, per55_design, quantiles = c(0.5))
+
+#calculate age means (percentage) for vietnam vets, extract std errors
+age.v <- svymean(~Ager, viet_design)
+age.se.v <- SE(age.v)[6:10]
+age.v <- age.v[6:10]
+#calculate age means (percentage) for General Population, extract std errors
+age.gp <- svymean(~Ager, per55_design)
+age.se.gp <- SE(age.gp)[6:10]
+age.gp <- age.gp[6:10]
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+age.z <- c() 
+for(i in 1:length(age.v)){
+  zscore<- (age.v[i]-age.gp[i])/sqrt(age.se.v[i]^2+age.se.gp[i]^2)
+  age.z <- c(zscore, age.z)
+  if(all(age.z > 1.96 | age.z < -1.96)==TRUE) age.zscore <- "Differences are significant at the 95% confidence level" else age.zscore <- "Differences are not significant."
+}
+
+#multiply by 100 to get percentages
+age.v <- age.v*100
+age.gp <- age.gp*100
+
+```
+
+```{r sex_setup, include=FALSE}
+#calculate sex means (percentage) for vietnam vets, extract std errors
+sex.v <- svymean(~SEX, viet_design)
+sex.se.v <- SE(sex.v)
+#calculate sex means (percentage) for General Population, extract std errors
+sex.gp <- svymean(~SEX, per55_design)
+sex.se.gp <- SE(sex.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+sex.z <- c() 
+for(i in 1:length(sex.v)){
+  zscore<- (sex.v[i]-sex.gp[i])/sqrt(sex.se.v[i]^2+sex.se.gp[i]^2)
+  sex.z <- c(zscore, sex.z)
+  if(all(sex.z > 1.96 | sex.z < -1.96)==TRUE) sex.zscore <- "Differences are significant at the 95% confidence level" else sex.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+sex.v <- sex.v*100
+sex.gp <- sex.gp*100
+
+#calculate GP totals by sex (used in slide header)
+sex.gp.tot <- (svytotal(~SEX, per55_design))/1000000
+```
+
+# Data Sources and Issues
+
+## Data Sources: American Community Survey (ACS) and Unique Veteran Report (UVR)
+
+* The primary data source is the [\textcolor{blue}{2015 ACS Public Use Microdata Sample (PUMS)}](https://www.census.gov/programs-surveys/acs/data/pums.html). The UVR is also used to provide a view into utilization of VA services. 
+    * The ACS is an ongoing survey that provides annual data on the social and economic characteristics of the U.S. population.
+    * The ACS uses a series of monthly samples to produce annually updated data for the same small areas (census tracts and block groups)formerly surveyed via the decennial census long-form sample.
+    * The UVR is internal report created for VA leadership to answer basic questions on the utilization of VA services by Veterans.
+
+* All comparative statements (Vietnam Veterans vs. General Population) have undergone statistical testing according to the [\textcolor{blue}{method prescribed in the ACS technical documentation}](https://www2.census.gov/programs-surveys/acs/tech_docs/statistical_testing/2015StatisticalTesting1year.pdf). Results are significant at the 95% confidence level.
+    * A “statistically significant difference” simply means there is statistical evidence that there is a difference; it does not mean the difference is necessarily large, important or significant in the usual sense of the word.’
+    * A “no statistically significant difference” means that there is statistical evidence that there is no difference in the comparative percentages/rates.
+    
+* Race categories are shown for the non-Hispanic population (e.g., White non-Hispanic, Black non-Hispanic, Asian non-Hispanic). Hispanics can be of any race.
+    * The Native Hawaiians and Pacific Islanders category is abbreviated as "NHOPI". They are also grouped together with the "Asian" category.
+    * “Other” includes individuals who reported as belonging to "Some Other Race" or " Two or More Races".
+    * American Indians and Alaska Natives are grouped together and are abbreviated as "AIAN"
+    
+* For more information about the ACS please visit the [\textcolor{blue}{U.S. Census Bureau webiste}](http://www.census.gov/acs).
+
+
+## Issues to Consider When Comparing Vietnam Veteran to Non-Veterans
+
+* Between 1964 and 1973, there were roughly 8.8 million[^1] personnel, composed of both volunteers and draftees, who served in the Vietnam War. As of 2015 there are an estimated `r round(viet.total[[5]]/1000000, digits=1)`M Veterans. 
+
+* Estimates reported here do not represent the number of troops deployed, killed, or wounded. They only represent Veterans who responded to the ACS in 2015. 
+
+* Vietnam Veterans are predominantly men (`r round(sex.v[1], digits=0)`%) whereas non-Veterans are mostly women (`r round(sex.gp[2], digits=0)`%). Any characteristic associated with sex will be affected by the inherent differences amongst men and women. 
+
+* Vietnam Veterans are compared with non-Veterans (General Population) of the same age group i.e. `r min(viet_design$variables$AGEP)` years and older. 
+
+* A bulk of Vietnam War Veterans (`r round(max(age.v), digits=0)`%) are  between 65 and 74 years old. Whereas `r round(max(age.gp), digits=0)`% of the General Population are between 55 an 64 years old. Veteran median age is around `r agep.v.qt[[1]]` compared with `r agep.gp.qt[[1]]` for non-Veterans.
+
+* Between December 1969 and March 1975, there were seven[^2] draft lottery drawings inducting roughly 75,717 registrants born between 1944 and 1956.
+
+* There are issues of selection bias in any comparison of Veterans and non-Veterans. Volunteers choose to enlist and are then chosen by the military based on specific criteria, both mental and physical, that may set them apart from the population who chose not to enlist. Any effects ascribed to military service may be attributable to pre-service characteristics and not necessarily Veteran status.
+    
+[^1]:[U.S. Department of Commerce, Bureau of the Census, "Vietnam Conflict—U.S. Military Forces in Vietnam and Casualties Incurred: 1961 to 1972," table 590, Statistical Abstract of the United States, 1977 (Washington, D.C.: U.S. Department of Commerce, Bureau of the Census, 1980), 369.](https://www2.census.gov/library/publications/1977/compendia/statab/98ed/1977-05.pdf)
+
+[^2]:[Selective Service System, "The Vietnam Lotteries"](https://www.sss.gov/About/History-And-Records/lotter1)
+
+
+# Demographic Characteristics
+
+## Estimated `r round(viet.total[[5]]/1000000, digits=1)`M Veterans from the Vietnam War Era. Ages range from `r max(viet_design$variables$AGEP)` to `r min(viet_design$variables$AGEP)` years old (born between `r 2015-max(viet_design$variables$AGEP)` and `r 2015-min(viet_design$variables$AGEP)`). Median age is `r agep.v.qt[[1]]` years. 
+
+<!-- age_setup at the top as it used in intro slide -->
+  \columnsbegin
+\column{.5\textwidth}
+```{r age_hist, out.width='2.0in'}
+#set graphical parameters
+par(mar=c(5,4,4,2),  cex.axis=1, cex.lab=1, col.lab="gray60", col.axis="gray60")
+
+#histogramalama!
+svyhist(~AGEP, 
+        viet_design,
+        breaks = 55:100,
+        freq = TRUE,
+        border="#ffffff",
+        col="#b2df8a", 
+        lwd=0.4,
+        las=1,
+        main="",
+        xlab=NA,
+        ylab=NA, 
+        ylim=c(0, 700000),
+        axes = FALSE)
+
+#custom y- axis
+axis(side=2, at=seq(0, 700000, 100000), labels=seq(0, 700, 100), las=1,  pos=55,lwd=0, lwd.tick=0.15, col.ticks="gray60", tick=TRUE, tck=-0.01)
+#custom y- axis Label
+title(ylab="Number of Veterans (in 000s)", line = 1.5)
+#custom x axis
+axis(side=1, at=seq(55, 100, 5), labels=TRUE, pos=0, lwd=0, lwd.tick=0.15, col.ticks="gray60", tick=TRUE, tck=-0.01)
+#custom x- axis Label
+title(xlab="Age", line = 1.5)
+
+#draw Median as reference line
+abline(v = agep.v.qt, col = "red")
+text(x=agep.v.qt+0.25, y=690000, srt=270, "Median", adj=c(0.5, -0.1), cex=0.8, col="gray10")
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r age_v_bar, out.width='2.0in'}
+
+#set graphical parameters and colors
+par(mar=c(5,6,0,2), cex=1.75,  col.axis="gray60")
+
+#barplot of AGE for VIETNAM VETS
+midpoints <- barplot(height=age.v,
+                     names.arg=c("55 - 64", "65 - 74", "75 - 84", "85 - 94", "95 - 99"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=age.v+8, y=midpoints, labels=paste(round(age.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+\column{.5\textwidth}
+```{r age_gp_hist, out.width='2.0in'}
+#set graphical parameters
+par(mar=c(5,4,4,2),  cex.axis=1, cex.lab=1, col.lab="gray60", col.axis="gray60")
+
+#histogramalama!
+svyhist(~AGEP, 
+        per55_design,
+        breaks = 55:100,
+        freq = TRUE,
+        border="#ffffff",
+        col="#33a02c", 
+        lwd=0.4,
+        las=1,
+        main="",
+        xlab=NA,
+        ylab=NA, 
+        ylim=c(0, 9000000),
+        axes = FALSE)
+
+#custom y- axis
+axis(side=2, at=seq(0, 9000000, 1000000), labels=seq(0, 9, 1), las=1,  pos=55,lwd=0, lwd.tick=0.15, col.ticks="gray60", tick=TRUE, tck=-0.01)
+#custom y- axis Label
+title(ylab="Number of Veterans (in Millions)", line = 1.5)
+#custom x axis
+axis(side=1, at=seq(55, 100, 5), labels=TRUE, pos=0, lwd=0, lwd.tick=0.15, col.ticks="gray60", tick=TRUE, tck=-0.01)
+#custom x- axis Label
+title(xlab="Age", line = 1.5)
+
+#draw Median as reference line
+abline(v = agep.gp.qt, col = "red")
+text(x=agep.gp.qt+0.25, y=8400000, srt=270, "Median", adj=c(0.5, -0.1), cex=0.8, col="gray10")
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r age_gp_bar, out.width='2.0in'}
+#set graphical parameters and colors
+par(mar=c(5,6,0,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of AGE for GENERAL POPULATION
+midpoints <- barplot(height=age.gp,
+                     names.arg=c("55 - 64", "65 - 74", "75 - 84", "85 - 94", "95 - 99"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=age.gp+8, y=midpoints, labels=paste(round(age.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+\columnsend
+\tinyrfont
+_`r age.zscore`_
+
+## An overwhelming majority of Vietnam War Veterans are male (`r round((viet.total[[5]]*sex.v[[1]])/100000000, digits=1)`M) while in the General Population females (`r round(sex.gp.tot[[2]], digits=1)`M) outnumber males by `r round(sex.gp.tot[[2]]-sex.gp.tot[[1]], digits=1)`M. 
+
+<!-- sex_setup at the top as it used in intro slide -->
+\columnsbegin
+\column{.5\textwidth}
+```{r sex_v_bar, out.width='2in'}
+#set graphical parameters
+par(mar=c(5,4,4,2), cex=2, col.lab="gray16", col.axis="gray30")
+
+#barplot of Vietnam Vets by Sex
+midpoints <- barplot(height=sex.v,
+                     space=0.5,
+                     names.arg=c("M","F"),
+                     horiz=TRUE,
+                     col=mycols[c(10,12)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=FALSE
+)
+
+#x-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=sex.v, y=midpoints, labels=paste(round(sex.v, digits=1), "%"), col="gray16", pos=4)
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{.5\textwidth}
+```{r sex_gp_bar, out.width='2in'}
+#set graphical parameters
+par(mar=c(5,4,4,2), cex=2, col.lab="gray16", col.axis="gray30")
+
+#barplot of General Population (Age >55) by Sex
+midpoints <- barplot(height=sex.gp,
+                     space=0.5,
+                     names.arg=c("M", "F"),
+                     horiz=T,
+                     col=mycols[c(9, 11)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=FALSE
+)
+
+#x-axis label
+mtext("Percentage of General Population", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=sex.gp, y=midpoints, labels=paste(round(sex.gp, digits=1), "%"), col="gray16", pos=4)
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r sex.zscore`_
+
+## Non-Hispanic Whites are the largest racial group amongst Vietnam War Veterans and General Population.
+
+```{r race_setup}
+#calculate racenhc means (percentage) for vietnam vets, extract std errors
+racenhc.v <- svymean(~RaceNHC, viet_design)
+racenhc.se.v <- SE(racenhc.v)
+#calculate racenhc means (percentage) for General Population, extract std errors
+racenhc.gp <- svymean(~RaceNHC, per55_design)
+racenhc.se.gp <- SE(racenhc.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+racenhc.z <- c() 
+for(i in 1:length(racenhc.v)){
+  zscore<- (racenhc.v[i]-racenhc.gp[i])/sqrt(racenhc.se.v[i]^2+racenhc.se.gp[i]^2)
+  racenhc.z <- c(zscore, racenhc.z)
+  if(all(racenhc.z > 1.96 | racenhc.z < -1.96)==TRUE) racenhc.zscore <- "Differences are significant at the 95% confidence level" else racenhc.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+racenhc.v <- racenhc.v*100
+racenhc.gp <- racenhc.gp*100
+
+```
+
+\columnsbegin
+\column{.5\textwidth}
+```{r race_v_bar, out.width='2in'}
+
+#set graphical parameters and colors
+par(mar=c(5,7,1,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of AGE for VIETNAM VETS
+midpoints <- barplot(height=racenhc.v,
+                     names.arg=c("American Indian\nAlaska Native", "Asian/NHOPI", "Black", "Hispanic", "Other", "White"),
+                     horiz=TRUE,
+                     col=mycols[seq(1,12,2)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=racenhc.v+8, y=midpoints, labels=paste(round(racenhc.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+\column{.5\textwidth}
+```{r race_gp_bar, out.width='2in'}
+
+#set graphical parameters and colors
+par(mar=c(5,7,1,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of AGE for VIETNAM VETS
+midpoints <- barplot(height=racenhc.gp,
+                     names.arg=c("American Indian\nAlaska Native", "Asian/NHOPI", "Black", "Hispanic", "Other", "White"),
+                     horiz=TRUE,
+                     col=mycols[seq(0,12,2)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=racenhc.gp+8, y=midpoints, labels=paste(round(racenhc.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r racenhc.zscore`_
+
+## Relative to the General Population, Vietnam Veterans are more likely to be married and less likely to be widowed. 
+
+```{r marital_setup}
+#calculate mar means (percentage) for vietnam vets, extract std errors
+mar.v <- svymean(~MAR, viet_design)
+mar.se.v <- SE(mar.v)
+#calculate mar means (percentage) for General Population, extract std errors
+mar.gp <- svymean(~MAR, per55_design)
+mar.se.gp <- SE(mar.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+mar.z <- c() 
+for(i in 1:length(mar.v)){
+  zscore<- (mar.v[i]-mar.gp[i])/sqrt(mar.se.v[i]^2+mar.se.gp[i]^2)
+  mar.z <- c(zscore, mar.z)
+  if(all(mar.z > 1.96 | mar.z < -1.96)==TRUE) mar.zscore <- "Differences are significant at the 95% confidence level" else mar.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+mar.v <- mar.v*100
+mar.gp <- mar.gp*100
+```
+\columnsbegin
+\column{0.5\textwidth}
+```{r marital_v_bar, out.width='2.25in'}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of MARITAL STATUS for VIETNAM VETS
+midpoints <- barplot(height=mar.v,
+                     names.arg=c("Married", "Widowed", "Divorced", "Separated", "Never\nMarried"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.75, col="gray60")
+#custom labels 
+text(x=mar.v+8, y=midpoints, labels=paste(round(mar.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+\column{0.5\textwidth}
+```{r marital_gp_bar, out.width='2.25in'}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of MARITAL STATUS for GENERAL POPULATION
+midpoints <- barplot(height=mar.gp,
+                     names.arg=c("Married", "Widowed", "Divorced", "Separated", "Never\nMarried"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8,10)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.75)
+#custom labels 
+text(x=mar.gp+8, y=midpoints, labels=paste(round(mar.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+\columnsend
+\tinyrfont
+_`r mar.zscore`_
+\normalfont
+Note: Vietnam War Veterans are mostly male and women have a higher life expectancy (need source.)
+
+## Veterans are marginally more likely to be disabled though their disability is not necessarily service connected. About a third of disabled Veterans are more than 70% disabled. 
+
+```{r dis_setup}
+
+#Disability Recode (DIS) VIETNAM VETERANS extract std errors
+dis.v <- svymean(~DIS, viet_design)
+dis.se.v <- SE(dis.v)
+#Disability Recode (DIS) GENERAL POPULATION, extract std errors
+dis.gp <- svymean(~DIS, per55_design)
+dis.se.gp <- SE(dis.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+dis.z <- c() 
+for(i in 1:length(dis.v)){
+  zscore<- (dis.v[i]-dis.gp[i])/sqrt(dis.se.v[i]^2+dis.se.gp[i]^2)
+  dis.z <- c(zscore, dis.z)
+  if(all(dis.z > 1.96 | dis.z < -1.96)==TRUE) dis.zscore <- "Disability status differences are significant at the 95% confidence level" else dis.zscore <- "Disability status differences are not significant."
+}
+#multiply by 100 to get percentages
+dis.v <- dis.v*100
+dis.gp <- dis.gp*100
+
+```
+
+```{r dratx_setup}
+
+## Veterans Service Connected Disability Rating (DRATX)
+dratx.v <- svymean(~DRATX, viet_design)*100
+
+## Veteran Service Connected Disability STATUS (DRAT)
+drat.v <- svymean(~DRAT, viet_design, na.rm = TRUE)*100
+
+# No sig test since these variables are not compared with the General Population
+
+```
+
+\columnsbegin
+\column{.5\textwidth}
+```{r dis_v_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of DISABILITY STATUS for VIETNAM VETS
+midpoints <- barplot(height=dis.v,
+                     space=0.5,
+                     names.arg=c("With", "Without"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=3
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#custom labels 
+text(x=dis.v+8, y=midpoints, labels=paste(round(dis.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("Disability Status", side=2, adj=0.5, line=2.75, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r dis_gp_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of DISABILITY STATUS for GENERAL POP
+midpoints <- barplot(height=dis.gp,
+                     space=0.5,
+                     names.arg=c("With", "Without"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=3
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#custom labels 
+text(x=dis.gp+8, y=midpoints, labels=paste(round(dis.gp, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("Disability Status", side=2, adj=0.5, line=2.75, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+```
+\column{.5\textwidth}
+```{r dratx_v_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,5,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Service Connected Disability for VIETNAM VETS
+midpoints <- barplot(height=dratx.v,
+                     space=0.5,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(9,11)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+#custom labels 
+text(x=dratx.v+8, y=midpoints, labels=paste(round(dratx.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("Service Connected Disability (SCD)", side=2, adj=0.5, line=2.9, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r drat_v_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of DISABILITY RATING for VIETNAM VETS
+midpoints <- barplot(height=drat.v,
+                     names.arg=c("0%", "10-20%", "30-40%", "50-60%", "70%<", "Not\nReported"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9,11)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+#custom labels 
+text(x=drat.v+8, y=midpoints, labels=paste(round(drat.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("SCD Rating", side=2, adj=0.5, line=5, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+
+```
+\columnsend
+
+\tinyrfont
+_`r dis.zscore`_
+
+## Independent Living Difficulty
+
+```{r dout_setup}
+
+#Independent Living Difficulty (DOUT) VIETNAM VETS,  extract std errors
+dout.v <- svymean(~DIS, viet_design)
+dout.se.v <- SE(dout.v)
+#Independent Living Difficulty (DOUT) GENERAL POPULATION, extract std errors
+dout.gp <- svymean(~DIS, per55_design)
+dout.se.gp <- SE(dout.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+dout.z <- c() 
+for(i in 1:length(dout.v)){
+  zscore<- (dout.v[i]-dout.gp[i])/sqrt(dout.se.v[i]^2+dout.se.gp[i]^2)
+  dout.z <- c(zscore, dout.z)
+  if(all(dout.z > 1.96 | dout.z < -1.96)==TRUE) dout.zscore <- "Differences are significant at the 95% confidence level" else dout.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+dout.v <- dout.v*100
+dout.gp <- dout.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r dout_v_bar, out.width='2.0in'}
+
+#set graphical parameters and colors
+par(mar=c(5,4,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of DISABILITY RATING for VIETNAM VETS
+midpoints <- barplot(height=dout.v,
+                     space=0.5,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(9,11)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=dout.v+8, y=midpoints, labels=paste(round(dout.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r dout_gp_bar, out.width='2.0in'}
+
+#set graphical parameters and colors
+par(mar=c(5,4,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of DISABILITY RATING for GENERAL POPULATION
+midpoints <- barplot(height=dout.gp,
+                     space=0.5,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(10,12)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=dout.gp+8, y=midpoints, labels=paste(round(dout.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r dout.zscore`_
+
+# Socioeconomic - Housing, Children, Internet
+
+## Almost all Veterans live in independent housing units. They are also more likely than the General Population to live as married couples.
+```{r gq_setup}
+
+#Group Quarters VIETNAM VETERANS
+gq.v <- svytotal(~TYPE, viet_gq_design)
+#Housing Units VIETNAM VETERANS
+hu.v <- svytotal(~TYPE, hou_viet_design)
+#Combine GQ and Housing Unit for Vietnam VETERANS
+type.v <- c(hu.v[1], gq.v[2:3])
+#Extract Std. Errors
+type.se.v <- c(SE(hu.v)[1], SE(gq.v)[2:3])
+rm(gq.v, hu.v)
+
+#Group Quarters GENERAL POPULATION
+gq.gp <- svytotal(~TYPE, per55_gq_design)
+#Housing Units GENERAL POPULATION
+hu.gp <- svytotal(~TYPE, hou55_design)
+#Combine GQ and Housing Unit for GENERAL POPULATION
+type.gp <- c(hu.gp[1], gq.gp[2:3])
+#Extract Std Errors
+type.se.gp <- c(SE(hu.gp)[1], SE(gq.gp)[2:3])
+rm(gq.gp, hu.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+type.z <- c() 
+for(i in 1:length(type.v)){
+  zscore<- (type.v[i]-type.gp[i])/sqrt(type.se.v[i]^2+type.se.gp[i]^2)
+  type.z <- c(zscore, type.z)
+  if(all(type.z > 1.96 | type.z < -1.96)==TRUE) type.zscore <- "Differences are significant at the 95% confidence level" else type.zscore <- "Differences are not significant."
+}
+
+#Convert to percentage
+type.v <- type.v/sum(type.v)*100
+type.gp <- type.gp/sum(type.gp)*100
+
+
+```
+
+```{r htype_setup}
+#Household Type VIETNAM VETS,  extract std errors
+htype.v <- svymean(~HouseType, hou_viet_design, na.rm=TRUE)
+htype.se.v <- SE(htype.v)
+#Household Type GENERAL POPULATION, extract std errors
+htype.gp <- svymean(~HouseType, hou55_design, na.rm=TRUE)
+htype.se.gp <- SE(htype.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+htype.z <- c() 
+for(i in 1:length(htype.v)){
+  zscore<- (htype.v[i]-htype.gp[i])/sqrt(htype.se.v[i]^2+htype.se.gp[i]^2)
+  htype.z <- c(zscore, htype.z)
+  if(all(htype.z > 1.96 | htype.z < -1.96)==TRUE) htype.zscore <- "Household Type differences are significant at the 95% confidence level" else htype.zscore <- "Household Type differences are not significant."
+}
+#multiply by 100 to get percentages
+htype.v <- htype.v*100
+htype.gp <- htype.gp*100
+
+```
+\columnsbegin
+\column{.5\textwidth}
+```{r gq_v_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,8,4,1), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of GROUP QUARTER for VIETNAM VETS
+midpoints <- barplot(height=type.v,
+                     space=0.5,
+                     names.arg=c("Housing Unit", "Institutional\nGroup Quarters", "Non-institutional\nGroup Quarters"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3)],
+                     border=NA,
+                     xlim=c(0,120),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=type.v+8, y=midpoints, labels=paste(round(type.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+
+```{r gq_gp_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,8,4,1), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of GROUP QUARTER for GENERAL POPULATION
+midpoints <- barplot(height=type.gp,
+                     space=0.5,
+                     names.arg=c("Housing Unit", "Institutional\nGroup Quarters", "Non-institutional\nGroup Quarters"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4)],
+                     border=NA,
+                     xlim=c(0,120),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=type.gp+8, y=midpoints, labels=paste(round(type.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.4, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\newline
+\tinyrfont
+_`r type.zscore`_
+\column{.5\textwidth}
+```{r htype_v_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,8,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of HOUSEHOLD TYPE for VIETNAM VETS
+midpoints <- barplot(height=htype.v,
+                     names.arg=c("Family\nHH Female", "Family\nHH Male", "Married Couple", "Non-Family HH"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=htype.v+8, y=midpoints, labels=paste(round(htype.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r htype_gp_bar, out.width='1.75in'}
+
+#set graphical parameters and colors
+par(mar=c(5,8,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of HOUSEHOLD TYPE for VIETNAM VETS
+midpoints <- barplot(height=htype.gp,
+                     names.arg=c("Family\nHH Female", "Family\nHH Male",  "Married Couple", "Non Family HH"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=htype.gp+8, y=midpoints, labels=paste(round(htype.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\columnsend
+
+<!-- setup for people-kids slide -->
+```{r people_setup}
+#Number of Persons in House VIETNAM VETS,  extract std errors
+people.v <- svymean(~People, hou_viet_design, na.rm=TRUE)
+people.se.v <- SE(people.v)
+#Number of Persons in House GENERAL POPULATION, extract std errors
+people.gp <- svymean(~People, hou55_design, na.rm=TRUE)
+people.se.gp <- SE(people.gp)
+
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+people.z <- c() 
+for(i in 1:length(people.v)){
+  zscore<- (people.v[i]-people.gp[i])/sqrt(people.se.v[i]^2+people.se.gp[i]^2)
+  people.z <- c(zscore, people.z)
+  if(all(people.z > 1.96 | people.z < -1.96)==TRUE) people.zscore <- "Differences are significant at the 95% confidence level" else people.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+people.v <- people.v*100
+people.gp <- people.gp*100
+```
+
+
+```{r kids_setup}
+
+#Presence of Children VIETNAM VETS
+#Number of Persons in House VIETNAM VETS,  extract std errors
+kids.v <- svymean(~Kids, hou_viet_design, na.rm=TRUE)
+kids.se.v <- SE(kids.v)
+#Number of Persons in House GENERAL POPULATION, extract std errors
+kids.gp <- svymean(~Kids, hou55_design, na.rm=TRUE)
+kids.se.gp <- SE(kids.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+kids.z <- c() 
+for(i in 1:length(kids.v)){
+  zscore<- (kids.v[i]-kids.gp[i])/sqrt(kids.se.v[i]^2+kids.se.gp[i]^2)
+  kids.z <- c(zscore, kids.z)
+  if(all(kids.z > 1.96 | kids.z < -1.96)==TRUE) kids.zscore <- "Differences are significant at the 95% confidence level" else kids.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+kids.v <- kids.v*100
+kids.gp <- kids.gp*100
+
+```
+
+## Most households consist 1-2 people with no kids. Veteran households are `r round(people.v[2]-people.gp[2], digits = 0)`% more likely to have two people. This is probably due to their age, marital status and fewer widowers.
+
+\columnsbegin
+\column{.5\textwidth}
+
+```{r people_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Number of People in House for VIETNAM VETS
+midpoints <- barplot(height=people.v,
+                     names.arg=c("1", "2", "3", "3+"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=people.v+8, y=midpoints, labels=paste(round(people.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+
+```{r kids_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Number of KIDS in House for VIETNAM VETS
+midpoints <- barplot(height=kids.v,
+                     names.arg=c("Kids in HH", "No Kids"),
+                     horiz=TRUE,
+                     col=mycols[c(9, 11)],
+                     border=NA,
+                     xlim=c(0,115),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=0,
+                     space =0.5
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=4, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=kids.v+8, y=midpoints, labels=paste(round(kids.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+\column{.5\textwidth}
+```{r people_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Number of People in House for GENERAL POPULATION
+midpoints <- barplot(height=people.gp,
+                     names.arg=c("1", "2", "3", "3+"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=people.gp+8, y=midpoints, labels=paste(round(people.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r kids_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Number of KIDS in House for General Population
+midpoints <- barplot(height=kids.gp,
+                     names.arg=c("Kids in HH", "No Kids"),
+                     horiz=TRUE,
+                     col=mycols[c(10, 12)],
+                     border=NA,
+                     xlim=c(0,115),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=0,
+                     space=0.5
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=4, las=0, cex=1.5)
+#custom labels 
+text(x=kids.gp+8, y=midpoints, labels=paste(round(kids.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+
+```
+\columnsend
+\tinyrfont
+_`r kids.zscore`_
+
+## Given the age group most households have the presence of someone 65 years and older while a small percentage also have the presence of someone 18 years and younger.
+
+```{r elder_setup}
+
+#Presence of 65 and over (Elder) VIETNAM VETS,  extract std errors
+elder.v <- svymean(~Elder, hou_viet_design, na.rm=TRUE)
+elder.se.v <- SE(elder.v)
+#Presence of 65 and over (Elder) GENERAL POPULATION, extract std errors
+elder.gp <- svymean(~Elder, hou55_design, na.rm=TRUE)
+elder.se.gp <- SE(elder.gp)
+
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+elder.z <- c() 
+for(i in 1:length(elder.v)){
+  zscore<- (elder.v[i]-elder.gp[i])/sqrt(elder.se.v[i]^2+elder.se.gp[i]^2)
+  elder.z <- c(zscore, elder.z)
+  if(all(elder.z > 1.96 | elder.z < -1.96)==TRUE) elder.zscore <- "Differences are significant at the 95% confidence level" else elder.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+elder.v <- elder.v*100
+elder.gp <- elder.gp*100
+
+```
+
+```{r teen_setup}
+
+#Presence of 18 and under (Teen)VIETNAM VETS,  extract std errors
+teen.v <- svymean(~Teen, hou_viet_design, na.rm=TRUE)
+teen.se.v <- SE(teen.v)
+#Presence of 18 and under (Teen) GENERAL POPULATION, extract std errors
+teen.gp <- svymean(~Teen, hou55_design, na.rm=TRUE)
+teen.se.gp <- SE(teen.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+teen.z <- c() 
+for(i in 1:length(teen.v)){
+  zscore<- (teen.v[i]-teen.gp[i])/sqrt(teen.se.v[i]^2+teen.se.gp[i]^2)
+  teen.z <- c(zscore, teen.z)
+  if(all(teen.z > 1.96 | teen.z < -1.96)==TRUE) teen.zscore <- "Differences are significant at the 95% confidence level" else teen.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+teen.v <- teen.v*100
+teen.gp <- teen.gp*100
+
+```
+
+\columnsbegin
+\column{.5\textwidth}
+
+```{r elder_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Presence of 65 and over for VIETNAM VETS
+midpoints <- barplot(height=elder.v,
+                     names.arg=c("1", "2+", "No Elder"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=elder.v+8, y=midpoints, labels=paste(round(elder.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r teen_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Presence of 65 and over for VIETNAM VETS
+midpoints <- barplot(height=teen.v,
+                     names.arg=c("1+ Teen", "No Teen"),
+                     horiz=TRUE,
+                     col=mycols[c(7,9)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.5
+)
+
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=4, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=teen.v+8, y=midpoints, labels=paste(round(teen.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{.5\textwidth}
+
+```{r elder_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Presence of 65 and over for GENERAL POPULATION
+midpoints <- barplot(height=elder.gp,
+                     names.arg=c("1", "2+", "No Elder"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=elder.gp+8, y=midpoints, labels=paste(round(elder.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r teen_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Presence of 65 and over for GENERAL POPULATION
+midpoints <- barplot(height=teen.gp,
+                     names.arg=c("1+ Teen", "No Teen"),
+                     horiz=TRUE,
+                     col=mycols[c(8, 10)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2, 
+                     space=0.5
+)
+
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=4, las=0, cex=1.5)
+#custom labels 
+text(x=teen.gp+8, y=midpoints, labels=paste(round(teen.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\columnsend
+\tinyrfont
+_`r elder.zscore`_
+
+<!-- setup for vehicles/autos -->
+```{r autos_setup}
+
+#Presence of 18 and under (Teen)VIETNAM VETS,  extract std errors
+autos.v <- svymean(~Autos, hou_viet_design, na.rm=TRUE)
+autos.se.v <- SE(autos.v)
+#Presence of 18 and under (Teen) GENERAL POPULATION, extract std errors
+autos.gp <- svymean(~Autos, hou55_design, na.rm=TRUE)
+autos.se.gp <- SE(autos.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+autos.z <- c() 
+for(i in 1:length(autos.v)){
+  zscore<- (autos.v[i]-autos.gp[i])/sqrt(autos.se.v[i]^2+autos.se.gp[i]^2)
+  autos.z <- c(zscore, autos.z)
+  if(all(autos.z > 1.96 | autos.z < -1.96)==TRUE) autos.zscore <- "Differences are significant at the 95% confidence level" else autos.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+autos.v <- autos.v*100
+autos.gp <- autos.gp*100
+
+```
+
+## 90% or more households have at least one vehicle while Veteran households are `r round(autos.v[3]-autos.gp[3], digits = 0)`% more likely to have two vehicles. 
+
+\columnsbegin
+\column{0.5\textwidth}
+
+```{r autos_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of No. of VEHICLES VIETNAM VETS
+midpoints <- barplot(height=autos.v,
+                     names.arg=c("0", "1", "2", "3+"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=autos.v+8, y=midpoints, labels=paste(round(autos.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{0.5\textwidth}
+
+```{r autos_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of No. of VEHICLES GENERAL POPULATION
+midpoints <- barplot(height=autos.gp,
+                     names.arg=c("0", "1", "2", "3+"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=autos.gp+8, y=midpoints, labels=paste(round(autos.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+\columnsend
+\tinyrfont
+_`r autos.zscore`_
+
+## Three-quarters of all households have internet access more than 50% don't have mobile broadband access. 
+
+```{r internet_setup}
+
+#Access to the Internet (ACCESS - Internet) VIETNAM VETS,  extract std errors
+internet.v <- svymean(~Internet, hou_viet_design, na.rm=TRUE)
+internet.se.v <- SE(internet.v)
+#Access to the Internet (ACCESS - Internet) GENERAL POPULATION, extract std errors
+internet.gp <- svymean(~Internet, hou55_design, na.rm=TRUE)
+internet.se.gp <- SE(internet.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+internet.z <- c() 
+for(i in 1:length(internet.v)){
+  zscore<- (internet.v[i]-internet.gp[i])/sqrt(internet.se.v[i]^2+internet.se.gp[i]^2)
+  internet.z <- c(zscore, internet.z)
+  if(all(internet.z > 1.96 | internet.z < -1.96)==TRUE) internet.zscore <- "Differences are significant at the 95% confidence level" else internet.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+internet.v <- internet.v*100
+internet.gp <- internet.gp*100
+
+```
+
+```{r mobilebb_setup}
+
+#Broadband - Mobile Broadband Plan - MobileBB VIETNAM VETS,  extract std errors
+mobile.v <- svymean(~MobileBB, hou_viet_design, na.rm=TRUE)
+mobile.se.v <- SE(mobile.v)
+#Broadband - Mobile Broadband Plan - MobileBB GENERAL POPULATION, extract std errors
+mobile.gp <- svymean(~MobileBB, hou55_design, na.rm=TRUE)
+mobile.se.gp <- SE(mobile.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+mobile.z <- c() 
+for(i in 1:length(mobile.v)){
+  zscore<- (mobile.v[i]-mobile.gp[i])/sqrt(mobile.se.v[i]^2+mobile.se.gp[i]^2)
+  mobile.z <- c(zscore, mobile.z)
+  if(all(mobile.z > 1.96 | mobile.z < -1.96)==TRUE) mobile.zscore <- "Differences are significant at the 95% confidence level" else mobile.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+mobile.v <- mobile.v*100
+mobile.gp <- mobile.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r internet_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Access to the Internet VIETNAM VETS
+midpoints <- barplot(height=internet.v,
+                     names.arg=c("No","Yes"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.5
+)
+
+#custom labels 
+text(x=internet.v+8, y=midpoints, labels=paste(round(internet.v, digits=1), "%"),  col="gray30")
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=4, las=0, cex=1.5, col="gray60")
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#Y-axis label
+mtext("Internet Access", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r mobilebb_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Mobile Broadband Plan VIETNAM VETS
+midpoints <- barplot(height=mobile.v,
+                     names.arg=c("No","Yes"),
+                     horiz=TRUE,
+                     col=mycols[c(5,7)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.5
+)
+
+#custom labels 
+text(x=mobile.v+8, y=midpoints, labels=paste(round(mobile.v, digits=1), "%"),  col="gray30")
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=4, las=0, cex=1.5, col="gray60")
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#Y-axis label
+mtext("Mobile Broadband Access", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{0.5\textwidth}
+```{r internet_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Access to the Internet GENERAL POPULATION
+midpoints <- barplot(height=internet.gp,
+                     names.arg=c("No", "Yes"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.5
+)
+
+#custom labels 
+text(x=internet.gp+8, y=midpoints, labels=paste(round(internet.gp, digits=1), "%"),  col="gray30")
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=4, las=0, cex=1.5)
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#Y-axis label
+mtext("Internet Access", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+```{r mobilebb_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Mobile Broadband Plan GENERAL POPULATION
+midpoints <- barplot(height=mobile.gp,
+                     names.arg=c("No","Yes"),
+                     horiz=TRUE,
+                     col=mycols[c(6,8)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.5
+)
+
+#custom labels 
+text(x=mobile.gp+8, y=midpoints, labels=paste(round(mobile.gp, digits=1), "%"),  col="gray30")
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=4, las=0, cex=1.5)
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#Y-axis label
+mtext("Mobile Broadband Access", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+\columnsend
+\tinyrfont
+_`r internet.zscore`_
+
+# Socioeconomic - Education, Employment, and Income
+
+## The differences for the education attainment levels are not statistically significant. 
+
+```{r education_setup}
+
+#Education Level - Educ VIETNAM VETS,  extract std errors
+educ.v <- svymean(~Educ, viet_design, na.rm=TRUE)
+educ.se.v <- SE(educ.v)
+#Education Level - Educ GENERAL POPULATION, extract std errors
+educ.gp <- svymean(~Educ, per55_design, na.rm=TRUE)
+educ.se.gp <- SE(educ.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+educ.z <- c() 
+for(i in 1:length(educ.v)){
+  zscore<- (educ.v[i]-educ.gp[i])/sqrt(educ.se.v[i]^2+educ.se.gp[i]^2)
+  educ.z <- c(zscore, educ.z)
+  if(all(educ.z > 1.96 | educ.z < -1.96)==TRUE) educ.zscore <- "Differences are significant at the 95% confidence level" else educ.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+educ.v <- educ.v*100
+educ.gp <- educ.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r educ_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Education Level VIETNAM VETS
+midpoints <- barplot(height=educ.v,
+                     names.arg=c("Advanced","Bachelor's","Graduate","Less than\nHigh School", "Some College"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=educ.v+8, y=midpoints, labels=paste(round(educ.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r educ_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Education Level GENERAL POPULATION
+midpoints <- barplot(height=educ.gp,
+                     names.arg=c("Advanced","Bachelor's","Graduate","Less than\nHigh School", "Some College"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8,10)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=educ.gp+8, y=midpoints, labels=paste(round(educ.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r educ.zscore`_
+
+## Non-Veterans are about 10% more likely to be in the labor force. Of those (Vietnam Veterans and non-Veterans) in the labor force, more than two-thirds are occupied in the private sector.
+
+```{r emp_setup}
+
+#Employment Status Recode - EmpPct VIETNAM VETS,  extract std errors
+emp.v <- svymean(~EmpPct, viet_design, na.rm=TRUE)
+emp.se.v <- SE(emp.v)
+#Employment Status Recode - EmpPct GENERAL POPULATION, extract std errors
+emp.gp <- svymean(~EmpPct, per55_design, na.rm=TRUE)
+emp.se.gp <- SE(emp.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+emp.z <- c() 
+for(i in 1:length(emp.v)){
+  zscore<- (emp.v[i]-emp.gp[i])/sqrt(emp.se.v[i]^2+emp.se.gp[i]^2)
+  emp.z <- c(zscore, emp.z)
+  if(all(emp.z > 1.96 | emp.z < -1.96)==TRUE) emp.zscore <- "Differences are significant at the 95% confidence level" else emp.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+emp.v <- emp.v*100
+emp.gp <- emp.gp*100
+
+```
+
+```{r worker_setup}
+
+#Class of Worker - cowr VIETNAM VETS,  extract std errors
+cowr.v <- svymean(~CowR, viet_design, na.rm=TRUE)
+cowr.se.v <- SE(cowr.v)
+#Class of Worker - cowr GENERAL POPULATION, extract std errors
+cowr.gp <- svymean(~CowR, per55_design, na.rm=TRUE)
+cowr.se.gp <- SE(cowr.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+cowr.z <- c() 
+for(i in 1:length(cowr.v)){
+  zscore<- (cowr.v[i]-cowr.gp[i])/sqrt(cowr.se.v[i]^2+cowr.se.gp[i]^2)
+  cowr.z <- c(zscore, cowr.z)
+  if(all(cowr.z > 1.96 | cowr.z < -1.96)==TRUE) cowr.zscore <- "Differences are significant at the 95% confidence level" else cowr.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+cowr.v <- cowr.v*100
+cowr.gp <- cowr.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r emp_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Employment Status Recode VIETNAM VETS
+midpoints <- barplot(height=emp.v,
+                     names.arg=c("Employed", "Not in\nLabor Force", "Unemployed"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=emp.v+8, y=midpoints, labels=paste(round(emp.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r cowr_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Class of Worker VIETNAM VETS
+midpoints <- barplot(height=cowr.v,
+                     names.arg=c("Government","Private","Self-Employed", "Unemployed"),
+                     horiz=TRUE,
+                     col=mycols[c(5,7,9,11)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=cowr.v+8, y=midpoints, labels=paste(round(cowr.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r emp_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Employment Status Recode GENERAL POPULATION
+midpoints <- barplot(height=emp.gp,
+                     names.arg=c("Employed", "Not in\nLabor Force", "Unemployed"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=emp.gp+8, y=midpoints, labels=paste(round(emp.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+```{r cowr_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Class of Worker GENERAL POPULATION
+midpoints <- barplot(height=cowr.gp,
+                     names.arg=c("Government","Private","Self-Employed", "Unemployed"),
+                     horiz=TRUE,
+                     col=mycols[c(6,8,10,12)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=cowr.gp+8, y=midpoints, labels=paste(round(cowr.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r emp.zscore`_
+
+## While most Veterans and non-Veterans are well above the poverty, Veterans are about 5% less likely to be living in poverty.
+
+```{r pov_setup}
+
+#Income-to-Poverty RatioVIETNAM VETS,  extract std errors
+pov.v <- svymean(~Pov, viet_design, na.rm=TRUE)
+pov.se.v <- SE(pov.v)
+#Income-to-Poverty Ratio GENERAL POPULATION, extract std errors
+pov.gp <- svymean(~Pov, per55_design, na.rm=TRUE)
+pov.se.gp <- SE(pov.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+pov.z <- c() 
+for(i in 1:length(pov.v)){
+  zscore<- (pov.v[i]-pov.gp[i])/sqrt(pov.se.v[i]^2+pov.se.gp[i]^2)
+  pov.z <- c(zscore, pov.z)
+  if(all(pov.z > 1.96 | pov.z < -1.96)==TRUE) pov.zscore <- "Differences are significant at the 95% confidence level" else pov.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+pov.v <- pov.v*100
+pov.gp <- pov.gp*100
+
+```
+
+```{r povty_setup}
+
+#Income-to-Poverty Rollup VIETNAM VETS,  extract std errors
+povty.v <- svymean(~Povty, viet_design, na.rm=TRUE)
+povty.se.v <- SE(povty.v)
+#Income-to-Poverty Rollup GENERAL POPULATION, extract std errors
+povty.gp <- svymean(~Povty, per55_design, na.rm=TRUE)
+povty.se.gp <- SE(povty.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+povty.z <- c() 
+for(i in 1:length(povty.v)){
+  zscore<- (povty.v[i]-povty.gp[i])/sqrt(povty.se.v[i]^2+povty.se.gp[i]^2)
+  povty.z <- c(zscore, povty.z)
+  if(all(povty.z > 1.96 | povty.z < -1.96)==TRUE) povty.zscore <- "Differences are significant at the 95% confidence level" else povty.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+povty.v <- povty.v*100
+povty.gp <- povty.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r pov_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Income-to-Poverty Ratio VIETNAM VETS
+midpoints <- barplot(height=pov.v,
+                     names.arg=c("0-99%", "100-149%", "150-199%", "200-299%","300-399%", "400%+"),
+                     horiz=TRUE,
+                     col=c("grey", mycols[c(1,3,5,7,9)]),
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=pov.v+8, y=midpoints, labels=paste(round(pov.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\newline
+\tinyrfont
+_`r pov.zscore`_
+
+```{r povty_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Poverty Roll-up VIETNAM VETS
+midpoints <- barplot(height=povty.v,
+                     names.arg=c("At or\nAbove Poverty", "In Poverty"),
+                     horiz=TRUE,
+                     col=mycols[c(3,1)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=povty.v+8, y=midpoints, labels=paste(round(povty.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r pov_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Income-to-Poverty Ratio GENERAL POPULATION
+midpoints <- barplot(height=pov.gp,
+                     names.arg=c("0-99%", "100-149%", "150-199%", "200-299%","300-399%", "400%+"),
+                     horiz=TRUE,
+                     col=c("grey", mycols[c(2,4,6,8,10)]),
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=pov.gp+8, y=midpoints, labels=paste(round(pov.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+```{r povty_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Poverty Roll-up GENERAL POPULATION
+midpoints <- barplot(height=povty.gp,
+                     names.arg=c("At or\nAbove Poverty", "In Poverty"),
+                     horiz=TRUE,
+                     col=mycols[c(4,2)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=povty.gp+8, y=midpoints, labels=paste(round(povty.gp, digits=1), "%"), col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r povty.zscore`_
+
+## No major differences in Earnings. Though in terms of Income Veterans are more likely to be in brackets above $20K.
+
+```{r pernpc_setup}
+
+#Personal EarningsVIETNAM VETS,  extract std errors
+pernpc.v <- svymean(~Pernpc, viet_design, na.rm=TRUE)
+pernpc.se.v <- SE(pernpc.v)
+#Personal Earnings GENERAL POPULATION, extract std errors
+pernpc.gp <- svymean(~Pernpc, per55_design, na.rm=TRUE)
+pernpc.se.gp <- SE(pernpc.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+pernpc.z <- c() 
+for(i in 1:length(pernpc.v)){
+  zscore<- (pernpc.v[i]-pernpc.gp[i])/sqrt(pernpc.se.v[i]^2+pernpc.se.gp[i]^2)
+  pernpc.z <- c(zscore, pernpc.z)
+  if(all(pernpc.z > 1.96 | pernpc.z < -1.96)==TRUE) pernpc.zscore <- "Differences are significant at the 95% confidence level" else pernpc.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+pernpc.v <- pernpc.v*100
+pernpc.gp <- pernpc.gp*100
+
+```
+
+```{r pincpc_setup}
+
+#Personal Income VIETNAM VETS,  extract std errors
+pincpc.v <- svymean(~Pincpc, viet_design, na.rm=TRUE)
+pincpc.se.v <- SE(pincpc.v)
+#Personal Income GENERAL POPULATION, extract std errors
+pincpc.gp <- svymean(~Pincpc, per55_design, na.rm=TRUE)
+pincpc.se.gp <- SE(pincpc.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+pincpc.z <- c() 
+for(i in 1:length(pincpc.v)){
+  zscore<- (pincpc.v[i]-pincpc.gp[i])/sqrt(pincpc.se.v[i]^2+pincpc.se.gp[i]^2)
+  pincpc.z <- c(zscore, pincpc.z)
+  if(all(pincpc.z > 1.96 | pincpc.z < -1.96)==TRUE) pincpc.zscore <- "Differences are significant at the 95% confidence level" else pincpc.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+pincpc.v <- pincpc.v*100
+pincpc.gp <- pincpc.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r pernpc_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Earnings  VIETNAM VETS
+midpoints <- barplot(height=pernpc.v,
+                     names.arg=c("0-20", "20-39", "40-59", "60-79", "80-99", "100+"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9,11)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+#custom labels 
+text(x=pernpc.v+8, y=midpoints, labels=paste(round(pernpc.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("Earnings in 000s", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r pincpc_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Income VIETNAM VETS
+midpoints <- barplot(height=pincpc.v,
+                     names.arg=c("0-20", "20-39", "40-59", "60-79", "80-99", "100+"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9,11)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#custom labels 
+text(x=pincpc.v+8, y=midpoints, labels=paste(round(pincpc.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("Income in 000s", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0., col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{0.5\textwidth}
+```{r pernpc_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Earnings  GENERAL POPULATION
+midpoints <- barplot(height=pernpc.gp,
+                     names.arg=c("0-20", "20-39", "40-59", "60-79", "80-99", "100+"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8,10,12)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     
+                     las=2
+)
+
+#custom labels 
+text(x=pernpc.gp+8, y=midpoints, labels=paste(round(pernpc.gp, digits=1), "%"), col="gray30")
+
+#Y-axis label
+mtext("Earnings in 000s", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+```{r pincpc_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Income GENERAL POPULATION
+midpoints <- barplot(height=pincpc.gp,
+                     names.arg=c("0-20", "20-39", "40-59", "60-79", "80-99", "100+"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8,10,12)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     
+                     las=2
+)
+
+#Y-axis label
+mtext("Income in 000s", side=2, adj=0.5, line=4, las=0, cex=1.5, col="gray60")
+
+#custom labels 
+text(x=pincpc.gp+8, y=midpoints, labels=paste(round(pincpc.gp, digits=1), "%"), col="gray30")
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+
+\columnsend
+\tinyrfont
+_`r pincpc.zscore`_
+
+## Of those recieving a retirement income, a majority of Veterans and non-Veterans get under $25K. Veteran are about 7% more likely to be in the 25K-50K income range. 
+
+```{r retpc_setup}
+
+#Retirement Income VIETNAM VETS,  extract std errors
+retpc.v <- svymean(~Retpc, viet_design, na.rm=TRUE)
+retpc.se.v <- SE(retpc.v)
+#Retirement Income GENERAL POPULATION, extract std errors
+retpc.gp <- svymean(~Retpc, per55_design, na.rm=TRUE)
+retpc.se.gp <- SE(retpc.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+retpc.z <- c() 
+for(i in 1:length(retpc.v)){
+  zscore<- (retpc.v[i]-retpc.gp[i])/sqrt(retpc.se.v[i]^2+retpc.se.gp[i]^2)
+  retpc.z <- c(zscore, retpc.z)
+  if(all(retpc.z > 1.96 | retpc.z < -1.96)==TRUE) retpc.zscore <- "Differences are significant at the 95% confidence level" else retpc.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+retpc.v <- retpc.v*100
+retpc.gp <- retpc.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+
+```{r retpc_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Income VIETNAM VETS
+midpoints <- barplot(height=retpc.v,
+                     names.arg=c("0-25", "25-50", "50-75", "75-100", "100-125", "125+"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5,7,9,11)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#custom labels 
+text(x=retpc.v+8, y=midpoints, labels=paste(round(retpc.v, digits=1), "%"),  col="gray30")
+
+#Y-axis label
+mtext("In 000s", side=2, adj=0.5, line=5, las=0, cex=1.5, col="gray60")
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{0.5\textwidth}
+```{r retpc_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,7,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Personal Income GENERAL POPULATION
+midpoints <- barplot(height=retpc.gp,
+                     names.arg=c("0-25", "25-50", "50-75", "75-100", "100-125", "125+"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6,8,10,12)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     
+                     las=2
+)
+
+#custom labels 
+text(x=retpc.gp+8, y=midpoints, labels=paste(round(retpc.gp, digits=1), "%"), col="gray30")
+
+#Y-axis label
+mtext("In 000s", side=2, adj=0.5, line=5, las=0, cex=1.5, col="gray60")
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset grpaph parameters
+par(opar)
+
+```
+\columnsend
+\tinyrfont
+_`r retpc.zscore`_
+
+## Overall Veterans and non-Veterans are not Food Stamp users, though Veterans are less likely to be users than the General Population. 
+
+```{r fs_setup}
+
+#Food Stamp VIETNAM VETS,  extract std errors
+fs.v <- svymean(~FS, hou_viet_design, na.rm=TRUE)
+fs.se.v <- SE(fs.v)
+#Food Stamp GENERAL POPULATION, extract std errors
+fs.gp <- svymean(~FS, hou55_design, na.rm=TRUE)
+fs.se.gp <- SE(fs.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+fs.z <- c() 
+for(i in 1:length(fs.v)){
+  zscore<- (fs.v[i]-fs.gp[i])/sqrt(fs.se.v[i]^2+fs.se.gp[i]^2)
+  fs.z <- c(zscore, fs.z)
+  if(all(fs.z > 1.96 | fs.z < -1.96)==TRUE) fs.zscore <- "Differences are significant at the 95% confidence level" else fs.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+fs.v <- fs.v*100
+fs.gp <- fs.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r fs_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Food Stamp Use by VIETNAM VETS
+midpoints <- barplot(height=fs.v,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=fs.v+8, y=midpoints, labels=paste(round(fs.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r fs_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Food Stamp Use of GENERAL POPULATION
+midpoints <- barplot(height=fs.gp,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=fs.gp+8, y=midpoints, labels=paste(round(fs.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+\columnsend
+\tinyrfont
+_`r fs.zscore`_
+
+# Socioeconomic - Health Insurance
+
+## Nearly all Veterans and non-Veterans have health insurance coverage. Though Veterans tend to have less private and more public coverage. 
+
+```{r hicov_setup}
+
+#Health Insurance Coverage VIETNAM VETS,  extract std errors
+hicov.v <- svymean(~HICOV, viet_design, na.rm=TRUE)
+hicov.se.v <- SE(hicov.v)
+#Health Insurance Coverage GENERAL POPULATION, extract std errors
+hicov.gp <- svymean(~HICOV, per55_design, na.rm=TRUE)
+hicov.se.gp <- SE(hicov.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+hicov.z <- c() 
+for(i in 1:length(hicov.v)){
+  zscore<- (hicov.v[i]-hicov.gp[i])/sqrt(hicov.se.v[i]^2+hicov.se.gp[i]^2)
+  hicov.z <- c(zscore, hicov.z)
+  if(all(hicov.z > 1.96 | hicov.z < -1.96)==TRUE) hicov.zscore <- "Differences are significant at the 95% confidence level" else hicov.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+hicov.v <- hicov.v*100
+hicov.gp <- hicov.gp*100
+
+```
+
+```{r hitype_setup}
+
+#Insurance Coverage Type VIETNAM VETS,  extract std errors
+hitype.v <- svymean(~HITYPE, viet_design, na.rm=TRUE)
+hitype.se.v <- SE(hitype.v)
+#Insurance Coverage Type GENERAL POPULATION, extract std errors
+hitype.gp <- svymean(~HITYPE, per55_design, na.rm=TRUE)
+hitype.se.gp <- SE(hitype.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+hitype.z <- c() 
+for(i in 1:length(hitype.v)){
+  zscore<- (hitype.v[i]-hitype.gp[i])/sqrt(hitype.se.v[i]^2+hitype.se.gp[i]^2)
+  hitype.z <- c(zscore, hitype.z)
+  if(all(hitype.z > 1.96 | hitype.z < -1.96)==TRUE) hitype.zscore <- "Differences are significant at the 95% confidence level" else hitype.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+hitype.v <- hitype.v*100
+hitype.gp <- hitype.gp*100
+
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+```{r hicov_v_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,5,4,1), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Health Insurance Coverage VIETNAM VETS
+midpoints <- barplot(height=hicov.v,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(3,1)],
+                     border=NA,
+                     xlim=c(0,120),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=hicov.v+8, y=midpoints, labels=paste(round(hicov.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r hitype_v_bar}
+#set graphical parameters and colors
+par(mar=c(5,4,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Health Insurance Coverage Type VIETNAM VETS
+midpoints <- barplot(height=hitype.v,
+                     names.arg=c("Private", "Public &\nPrivate", "Public"),
+                     horiz=TRUE,
+                     col=mycols[c(1,3,5)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=hitype.v+8, y=midpoints, labels=paste(round(hitype.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+\column{0.5\textwidth}
+```{r hicov_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,5,4,1), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Health Insurance Coverage GENERAL POPULATION
+midpoints <- barplot(height=hicov.gp,
+                     names.arg=c("Yes", "No"),
+                     horiz=TRUE,
+                     col=mycols[c(4,2)],
+                     border=NA,
+                     xlim=c(0,120),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=hicov.gp+8, y=midpoints, labels=paste(round(hicov.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+
+```{r hitype_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,4,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Health Insurance Coverage Type GENERAL POPULATION
+midpoints <- barplot(height=hitype.gp,
+                     names.arg=c("Private", "Public &\nPrivate", "Public"),
+                     horiz=TRUE,
+                     col=mycols[c(2,4,6)],
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=hitype.gp+8, y=midpoints, labels=paste(round(hitype.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+\columnsend
+\tinyrfont
+_`r hitype.zscore`_
+
+## Uses VA Care HINS6 / Specific Insurance - Ins
+
+```{r vacare_setup}
+
+#Uses VA Care HINS6 VIETNAM VETS,  extract std errors
+vacare.v <- svymean(~HINS6, viet_design, na.rm=TRUE)
+vacare.se.v <- SE(vacare.v)
+#Uses VA Care HINS6 GENERAL POPULATION, extract std errors
+vacare.gp <- svymean(~HINS6, per55_design, na.rm=TRUE)
+vacare.se.gp <- SE(vacare.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+vacare.z <- c() 
+for(i in 1:length(vacare.v)){
+  zscore<- (vacare.v[i]-vacare.gp[i])/sqrt(vacare.se.v[i]^2+vacare.se.gp[i]^2)
+  vacare.z <- c(zscore, vacare.z)
+  if(all(vacare.z > 1.96 | vacare.z < -1.96)==TRUE) vacare.zscore <- "Differences are significant at the 95% confidence level" else vacare.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+vacare.v <- vacare.v*100
+vacare.gp <- vacare.gp*100
+
+```
+
+```{r ins_setup}
+
+#Specific Insurance - Ins VIETNAM VETS,  extract std errors
+ins.v <- svymean(~Ins, viet_design, na.rm=TRUE)
+ins.se.v <- SE(ins.v)
+#Specific Insurance - Ins GENERAL POPULATION, extract std errors
+ins.gp <- svymean(~Ins, per55_design, na.rm=TRUE)
+ins.se.gp <- SE(ins.gp)
+
+#significance test if z < -1.96 or Z>1,96, results are significant at the 95 confidence level
+ins.z <- c() 
+for(i in 1:length(ins.v)){
+  zscore<- (ins.v[i]-ins.gp[i])/sqrt(ins.se.v[i]^2+ins.se.gp[i]^2)
+  ins.z <- c(zscore, ins.z)
+  if(all(ins.z > 1.96 | ins.z < -1.96)==TRUE) ins.zscore <- "Differences are significant at the 95% confidence level" else ins.zscore <- "Differences are not significant."
+}
+#multiply by 100 to get percentages
+ins.v <- ins.v*100
+ins.gp <- ins.gp*100
+
+```
+
+\columnsbegin
+\column{0.5\textwidth}
+
+```{r vacare_v_bar}
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Uses VA Care HINS6 VIETNAM VETS
+midpoints <- barplot(height=vacare.v,
+                     names.arg=c("Uses VA", "Does Not\nUse VA"),
+                     horiz=TRUE,
+                     col=mycols[c(3,1)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.75
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=vacare.v+8, y=midpoints, labels=paste(round(vacare.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+```{r ins_v_bar, out.width='2.5in'}
+#set graphical parameters and colors
+par(mar=c(4,6,2,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Specific Insurance VIETNAM VETS
+midpoints <- barplot(height=ins.v,
+                     names.arg=c("Direct", "Employer &\nTricare", "Employer & VA", "IHS", "Medicaid", "Medicare", "Tricare", "VA & Private", "VA & Public", "VA Only", "VA & Public\n& Private"),
+                     horiz=TRUE,
+                     col=brewer.pal(n=11, "Set3"),
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     cex.names=0.6
+)
+
+#X-axis label
+mtext("Percentage of Veterans", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=ins.v+8, y=midpoints, labels=paste(round(ins.v, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+\column{0.5\textwidth}
+
+```{r vacare_gp_bar}
+
+#set graphical parameters and colors
+par(mar=c(5,6,4,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Uses VA Care HINS6 GENERAL POPULATION
+midpoints <- barplot(height=vacare.gp,
+                     names.arg=c("Uses VA", "Does Not\nUse VA"),
+                     horiz=TRUE,
+                     col=mycols[c(4,2)],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     space=0.75
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=vacare.gp+8, y=midpoints, labels=paste(round(vacare.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0.1, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+
+```{r ins_gp_bar, out.width='2.5in'}
+
+#set graphical parameters and colors
+par(mar=c(4,6,2,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Specific Insurance GENERAL POPULATION
+midpoints <- barplot(height=ins.gp,
+                     names.arg=c("Direct", "Employer &\nTricare", "Employer & VA", "IHS", "Medicaid", "Medicare", "Tricare", "VA & Private", "VA & Public", "VA Only", "VA & Public\n& Private"),
+                     horiz=TRUE,
+                     col=mycols[1:11],
+                     border=NA,
+                     xlim=c(0,110),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     cex.names=0.6
+)
+
+#X-axis label
+mtext("Percentage of General Population", col="gray60", side=1, adj=0.25, line=2.5, las=0, cex=1.5)
+#custom labels 
+text(x=ins.gp+8, y=midpoints, labels=paste(round(ins.gp, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+```
+\columnsend
+\tinyrfont
+_`r vacare.zscore`_
+
+
+# Utilization of VA Benefits & Services
+
+## Most Vietnam Era Veterans recieve heath care or compensation benefits. 
+
+```{r util_v_bar}
+#set graphical parameters and colors
+par(mar=c(4,6,2,2), cex=1.75, col.lab="gray30", col.axis="gray60")
+
+#barplot of Specific Insurance VIETNAM VETS
+midpoints <- barplot(height=uvr15$Yes,
+                     names.arg=c("Compensation\nor Pension", "Compensation Only", "Education", "Health Care", "Burial\nGrave Marker", "Home Loan", "Vocational\nRehab", "Compensation\nOr Health Care"),
+                     horiz=TRUE,
+                     col=brewer.pal(n=8, "Set3"),
+                     border=NA,
+                     xlim=c(0,100),
+                     axes=TRUE,
+                     xaxt="n",
+                     las=2,
+                     cex.names=0.6
+)
+
+#X-axis label
+mtext("Percentage of Veteran Users", side=1, adj=0.25, line=2.5, las=0, cex=1.5, col="gray60")
+#custom labels 
+text(x=uvr15$Yes+8, y=midpoints, labels=paste(round(uvr15$Yes, digits=1), "%"),  col="gray30")
+#custom x-axis
+axis(side = 1, at = c(0,25,50,75,100), pos=0, col.ticks = "gray60",  cex.axis=0.75, lwd=0, lwd.ticks = 0.15)
+
+#reset graph parameters
+par(opar)
+
+```
+
+# Contact Information
+
+## This profile was prepared by the [\textcolor{blue}{National Center for Veterans Analysis and Statistics}](https://www.va.gov/vetdata/)
+
+For general inquiries, please email us at \textcolor{blue}{VANCVAS@va.gov}
