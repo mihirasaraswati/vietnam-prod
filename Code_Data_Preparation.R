@@ -7,6 +7,7 @@ library(dplyr)
 #read-in person data
 per <- readRDS("./Raw_Data/pusab15.rds")
 
+
 # Assign Data Types - Person File - Demographic Vars ------------------------------------
 ## Military Service (MIL)
 per$MIL[which(is.na(per$MIL)==TRUE)] <- "b"
@@ -116,6 +117,10 @@ per$DRAT <- factor(per$DRAT, levels = c(1:6), labels = c("0%", "10-20%", "30-40%
 
 ## Independent Living Difficulty (DOUT)
 per$DOUT <- factor(per$DOUT, levels = c(1:2), labels = c("Yes", "No"))
+
+
+
+
 
 # Assign Data Types - Person File - Socio-economics Vars ---------------------------------
 
@@ -254,14 +259,42 @@ per <- per %>% mutate(Ins = replace(Ins, which(Ins==""), NA))
 
 
 
-# Create Survey Object - Person File ----------------------------------------
+
+# Save Processed Data - Person --------------------------------------------
+
+#SAVE processed Person file data
+saveRDS(per, file = "Data_Per_Processed.Rds")
 
 #create data frame with profile variables
 per_prof <- select(per, RT, SERIALNO, MIL, Period, MLPE, AGEP, Ager, SEX, RaceNH, RaceNHC, MAR, ST, DIS, DRATX, DRAT, DOUT, Educ, CowR, EmpPct, Pov, Povty, HICOV, HITYPE, HINS6, Ins, RETP, Retpc, PERNP, Pernpc, PINCP, Pincpc, PWGTP, pwgtp1:pwgtp80)
-#clear workspace
-rm(per)
 
-#create survey design object - PROFILE Variables
+#SAVE processed Person Profile Variables data
+saveRDS(per_prof, file = "Data_Per_Prof.Rds")
+
+
+
+# Create Survey Object - Person File ----------------------------------------
+
+#create survey design object - General/Total Population All Variables
+per_design <- svydesign(id = ~1, 
+                        weights = per$PWGTP,
+                        data = per,
+                        repweights = "pwgtp[0-9]+",
+                        type = "JKn",
+                        scale = 4/80, 
+                        rscales = rep(1,80),
+                        combined.weights = TRUE
+)
+
+#
+#save
+saveRDS(per_design, file = "Data_Per_Design.Rds")
+#Remove per data frame to  free up ram space
+rm(per_design, per)
+
+#create survey design object - General/Total Population PROFILE Variables
+
+#design object
 prof_design <- svydesign(id = ~1, 
                          weights = per_prof$PWGTP,
                          data = per_prof,
@@ -272,7 +305,11 @@ prof_design <- svydesign(id = ~1,
                          combined.weights = TRUE
 )
 
-#Subset survey design object for Vietnam Veterans
+#save
+saveRDS(prof_design, file = "Data_Prof_Design.Rds")
+
+#create survey design object - Vietnam Veterans
+#subset for All Veterans and then Vietnam era vets
 viet_design <- subset(prof_design, MIL=="Veteran" & Period=="Vietnam")
 #save
 saveRDS(viet_design, file = "Data_Viet_Design.Rds")
@@ -281,16 +318,20 @@ saveRDS(viet_design, file = "Data_Viet_Design.Rds")
 per55_design <- subset(prof_design, AGEP >=55 & MIL=="Never Served")
 #save
 saveRDS(per55_design, file = "Data_Per55_Design.Rds")
-#clear workspace
 rm(prof_design)
+
 
 
 # ###HOUSING FILE DATA PREPARATION -------------------------------------------
 
+
+
 # Read Data - Housing File ------------------------------------------------
 hou <- readRDS("./Raw_Data/husab15.rds")
 
+
 # Assign Data Types - Housing File ----------------------------------------
+
 #Housing Type (TYPE)
 hou$TYPE <- factor(hou$TYPE, levels = c(1:3), labels = c("Housing Unit", "Institutional GQ", "Non-Institutional GQ"))
 
@@ -386,6 +427,8 @@ hou <- hou %>% mutate(MobileBB = replace(MobileBB, which(is.na(BROADBND)==TRUE),
 hou <- hou %>% mutate(MobileBB = replace(MobileBB, which(BROADBND==1), "Yes"))
 hou <- hou %>% mutate(MobileBB = replace(MobileBB, which(BROADBND==2), "No"))
 
+
+
 # Create Survey Object - Housing File -------------------------------------
 
 #subset hou to select relevant variables
@@ -401,8 +444,7 @@ hou_prof_design <- svrepdesign(repweights = 'wgtp[0-9]+',
                                mse = TRUE
 )
 #save
-# saveRDS(hou_prof_design, file = "Data_Hou_Prof_Design.Rds")
-#clear workspace
+saveRDS(hou_prof_design, file = "Data_Hou_Prof_Design.Rds")
 rm(hou)
 
 #subset hou_prof_design to select Vietnam era vets
@@ -410,7 +452,6 @@ hou_viet_design <- subset(hou_prof_design, SERIALNO %in% viet_design$variables$S
 #save
 saveRDS(hou_viet_design, file = "Data_Hou_Viet_Design.Rds")
 rm(viet_design)
-
 #subset hou_prof_design to select General Pop (Age over 55)
 hou55_design <- subset(hou_prof_design, SERIALNO %in% per55_design$variables$SERIALNO)
 #save
@@ -418,8 +459,9 @@ saveRDS(hou55_design, file = "Data_Hou55_Design.Rds")
 rm(hou_prof_design, per55_design)
 
 
-# Create Survey Objects (Vietnam and General Population) for Group Quarters ---------------------------------
 
+
+# Create Survey Objects (Vietnam and General Population) for Group Quarters ---------------------------------
 ####Vietnam Vet GQ Survey Object - Creating a new survey design object where the TYPE variable from the Housing file can be combined with the Weights from the Person File
 
 #select SERIALNO from hou_viet that are in GQ
