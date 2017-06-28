@@ -1,12 +1,20 @@
 \documentclass[$if(fontsize)$$fontsize$,$endif$$if(lang)$$babel-lang$,$endif$$if(handout)$handout,$endif$$if(colorlinks)$dvipsnames,$endif$$if(beamer)$ignorenonframetext,$endif$$for(classoption)$$classoption$$sep$,$endfor$]{$documentclass$}
-% \setbeamersize{text margin left = 10pt, text margin right = 10pt}
 \setbeamertemplate{caption}[numbered]
 \setbeamertemplate{caption label separator}{: }
 \setbeamertemplate{navigation symbols}{}
-\setbeamertemplate{footline}[page number]
+
+% add page number to slide footer, also add Source verbiage
+\setbeamertemplate{footline}[text line]{%
+  \parbox{\linewidth}{
+    \vspace*{-16pt}\hspace*{-16pt}Source: U.S. Census Bureau, American Community Survey PUMS, 2015\newline\hspace*{-16pt}Prepared by the National Center for Veterans Analysis and Statistics
+  \hfill\insertpagenumber}}
+\setbeamercolor{footline}{fg=gray}
+  
 \setbeamercolor{caption name}{fg=normal text.fg}
-%set slide header font color to black
-\setbeamercolor{frametitle}{fg=black} 
+%set slide header font color to black and background to steelblue(#4682B4)
+\definecolor{mslightsteelblue}{HTML}{B0C4DE}
+\setbeamercolor{frametitle}{fg=black, bg=mslightsteelblue}
+
 \beamertemplatenavigationsymbols$if(navigation)$$navigation$$else$empty$endif$
 $if(fontfamily)$
 \usepackage[$for(fontfamilyoptions)$$fontfamilyoptions$$sep$,$endfor$]{$fontfamily$}
@@ -172,6 +180,7 @@ $endif$
 \textcolor{blue}
 }
 
+
 % Prevent slide breaks in the middle of a paragraph:
 \widowpenalties 1 10000
 \raggedbottom
@@ -187,7 +196,8 @@ $if(section-titles)$
   \else
     \let\insertsectionnumber\relax
     \let\sectionname\relax
-    \frame{\sectionpage}
+    %remove footer text from section slides
+    \thispagestyle{empty}\frame{\sectionpage}
   \fi
 }
 \AtBeginSubsection{
@@ -268,6 +278,10 @@ $include-before$
 $endfor$
 $if(toc)$
 \begin{frame}
+%removes footer text from ToC slide
+\thispagestyle{empty}
+%adds the words Table of Contents to TOC slide
+\frametitle{Table of Contents}
 \tableofcontents[hideallsubsections]
 \end{frame}
 
